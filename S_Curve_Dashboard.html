@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project S-Curve Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #1a1a2e; }
+  .header { background: linear-gradient(135deg, #1F4E79, #2E75B6); color: white;
+             padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 1.6rem; font-weight: 700; }
+  .header .meta { font-size: 0.85rem; opacity: 0.85; text-align: right; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .kpi { background: white; border-radius: 10px; padding: 18px 16px; text-align: center;
+           box-shadow: 0 2px 8px rgba(0,0,0,.08); border-top: 4px solid #2E75B6; }
+  .kpi .val { font-size: 2rem; font-weight: 700; color: #1F4E79; }
+  .kpi .lbl { font-size: 0.75rem; color: #666; margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
+  .card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            margin-bottom: 24px; overflow: hidden; }
+  .card-title { background: #1F4E79; color: white; padding: 14px 20px; font-weight: 600; font-size: 1rem; }
+  .card-body { padding: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th { background: #2E75B6; color: white; padding: 10px 12px; text-align: left; }
+  td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+  tr:hover td { background: #f5f8ff; }
+  .footer { text-align: center; color: #999; font-size: 0.8rem; padding: 20px; }
+  .legend-note { font-size:0.8rem; color:#555; padding:8px 20px 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>📊 Project Progress Dashboard</h1>
+    <div style="opacity:.8;font-size:.9rem;margin-top:4px;">S-Curve · EVM · Delay Analysis</div>
+  </div>
+  <div class="meta">
+    Last updated<br><strong>19 Jun 2026  12:00:31</strong><br>
+    <span style="font-size:.75rem">Auto-refreshes when Excel changes</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="val">40.8%</div>
+      <div class="lbl">Overall Progress</div>
+    </div>
+    <div class="kpi">
+      <div class="val" style="font-size:1.4rem">$3.60M</div>
+      <div class="lbl">Budget (PV)</div>
+    </div>
+    <div class="kpi">
+      <div class="val" style="font-size:1.4rem">$1.89M</div>
+      <div class="lbl">Actual Cost (AC)</div>
+    </div>
+    <div class="kpi">
+      <div class="val" style="font-size:1.4rem">$1.57M</div>
+      <div class="lbl">Earned Value (EV)</div>
+    </div>
+    <div class="kpi">
+      <div class="val" style="color:#dc3545">0.83</div>
+      <div class="lbl">CPI (≥1 = under budget)</div>
+    </div>
+    <div class="kpi">
+      <div class="val" style="color:#dc3545">0.44</div>
+      <div class="lbl">SPI (≥1 = on schedule)</div>
+    </div>
+    <div class="kpi">
+      <div class="val" style="color:#dc3545">5</div>
+      <div class="lbl">Delayed Tasks</div>
+    </div>
+  </div>
+
+  <!-- S-Curve: Progress -->
+  <div class="card">
+    <div class="card-title">📈 S-Curve — Schedule Progress (%)</div>
+    <div class="card-body">
+      <div id="chart_progress" style="height:380px"></div>
+      <div class="legend-note">▸ Planned: what % should be done each day based on task durations &nbsp;|&nbsp; ▸ Actual: snapshot of real progress today</div>
+    </div>
+  </div>
+
+  <!-- S-Curve: Cost / EV -->
+  <div class="card">
+    <div class="card-title">💰 S-Curve — Cost & Earned Value (USD)</div>
+    <div class="card-body">
+      <div id="chart_cost" style="height:380px"></div>
+      <div class="legend-note">▸ PV = Planned Value &nbsp;|&nbsp; EV = Earned Value &nbsp;|&nbsp; AC = Actual Cost &nbsp;|&nbsp; EV &lt; AC → Cost overrun &nbsp;|&nbsp; EV &lt; PV → Behind schedule</div>
+    </div>
+  </div>
+
+  <!-- Delay Table -->
+  <div class="card">
+    <div class="card-title">⚠️ Delay Analysis — Task by Task</div>
+    <div class="card-body" style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Task</th><th>Status</th><th>Progress</th>
+          <th>Start Delay</th><th>Finish Delay</th><th>Severity</th>
+        </tr></thead>
+        <tbody>
+        <tr style="background:#d4edda">
+          <td>Site Mobilization</td>
+          <td>Completed</td>
+          <td>100.0%</td>
+          <td>—</td>
+          <td>—</td>
+          <td>🟢 On Track</td>
+        </tr>
+        <tr style="background:#d4edda">
+          <td>Excavation & Earthworks</td>
+          <td>Completed</td>
+          <td>100.0%</td>
+          <td>—</td>
+          <td>—</td>
+          <td>🟢 On Track</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>Foundation Piling</td>
+          <td>Delayed</td>
+          <td>95.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>Substructure Concrete</td>
+          <td>Delayed</td>
+          <td>80.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>Superstructure – Level 1</td>
+          <td>Delayed</td>
+          <td>60.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>Superstructure – Level 2</td>
+          <td>Delayed</td>
+          <td>30.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>MEP Rough-In – Level 1</td>
+          <td>Delayed</td>
+          <td>25.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>MEP Rough-In – Level 2</td>
+          <td>Not Started</td>
+          <td>0.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>Facade & Cladding</td>
+          <td>Not Started</td>
+          <td>0.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>Interior Fit-Out</td>
+          <td>Not Started</td>
+          <td>0.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>Testing & Commissioning</td>
+          <td>Not Started</td>
+          <td>0.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr>
+        <tr style="background:#f8d7da">
+          <td>Final Inspection & Handover</td>
+          <td>Not Started</td>
+          <td>0.0%</td>
+          <td>—</td>
+          <td>+20622 days</td>
+          <td>🔴 Critical</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">Auto-generated by Project Progress Pipeline · 19 Jun 2026  12:00:31</div>
+
+<script>
+const dates = ["1970-01-01", "1970-01-02", "1970-01-03", "1970-01-04", "1970-01-05", "1970-01-06", "1970-01-07", "1970-01-08", "1970-01-09", "1970-01-10", "1970-01-11", "1970-01-12", "1970-01-13", "1970-01-14", "1970-01-15", "1970-01-16", "1970-01-17", "1970-01-18", "1970-01-19", "1970-01-20", "1970-01-21", "1970-01-22", "1970-01-23", "1970-01-24", "1970-01-25", "1970-01-26", "1970-01-27", "1970-01-28", "1970-01-29", "1970-01-30", "1970-01-31"];
+const today = "2026-06-19";
+const todayIdx = 30;
+
+// ── Progress Chart ────────────────────────────────────────────
+const plannedProg = [0.0, 0.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0];
+const actualProg  = [40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336, 40.833333333333336];
+
+const trace1 = {
+  x: dates, y: plannedProg, name: 'Planned Progress (%)',
+  mode: 'lines', line: { color: '#2E75B6', width: 2.5, dash: 'dot' },
+  hovertemplate: '%{x}<br>Planned: %{y:.1f}%<extra></extra>'
+};
+const trace2 = {
+  x: dates.slice(0, todayIdx+1),
+  y: Array(todayIdx+1).fill(actualProg.find(v => v !== null) || 0),
+  name: 'Actual Progress (%)',
+  mode: 'lines', line: { color: '#ED7D31', width: 3 },
+  hovertemplate: '%{x}<br>Actual: %{y:.1f}%<extra></extra>'
+};
+const todayLine1 = {
+  x: [today, today], y: [0, 100],
+  mode: 'lines', name: 'Today',
+  line: { color: '#dc3545', width: 1.5, dash: 'dash' },
+  hoverinfo: 'skip'
+};
+
+Plotly.newPlot('chart_progress', [trace1, trace2, todayLine1], {
+  margin: {t:20, b:50, l:55, r:30},
+  xaxis: { title: 'Date', showgrid: true, gridcolor: '#eee' },
+  yaxis: { title: 'Cumulative Progress (%)', range: [0,105], showgrid: true, gridcolor: '#eee' },
+  legend: { orientation: 'h', y: -0.15 },
+  paper_bgcolor: 'white', plot_bgcolor: 'white'
+}, {responsive: true});
+
+// ── Cost / EV Chart ───────────────────────────────────────────
+const pv = [0.0, 0.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0, 3600000.0];
+const ac = [0.0, 63100.0, 126200.0, 189300.0, 252400.0, 315500.0, 378600.0, 441700.0, 504800.0, 567900.0, 631000.0, 694100.0, 757200.0, 820300.0, 883400.0, 946500.0, 1009600.0, 1072700.0, 1135800.0, 1198900.0, 1262000.0, 1325100.0, 1388200.0, 1451300.0, 1514400.0, 1577500.0, 1640600.0, 1703700.0, 1766800.0, 1829900.0, 1893000.0];
+const ev = [0.0, 52250.0, 104500.0, 156750.0, 209000.0, 261250.0, 313500.0, 365750.0, 418000.0, 470250.0, 522500.0, 574750.0, 627000.0, 679250.0, 731500.0, 783750.0, 836000.0, 888250.0, 940500.0, 992750.0, 1045000.0, 1097250.0, 1149500.0, 1201750.0, 1254000.0, 1306250.0, 1358500.0, 1410750.0, 1463000.0, 1515250.0, 1567500.0];
+
+const tracePV = {
+  x: dates, y: pv, name: 'Planned Value (PV)',
+  mode: 'lines', line: { color: '#2E75B6', width: 2.5, dash: 'dot' },
+  hovertemplate: '%{x}<br>PV: $%{y:,.0f}<extra></extra>'
+};
+const traceAC = {
+  x: dates.slice(0, todayIdx+1), y: ac.slice(0, todayIdx+1), name: 'Actual Cost (AC)',
+  mode: 'lines', line: { color: '#dc3545', width: 3 },
+  hovertemplate: '%{x}<br>AC: $%{y:,.0f}<extra></extra>'
+};
+const traceEV = {
+  x: dates.slice(0, todayIdx+1), y: ev.slice(0, todayIdx+1), name: 'Earned Value (EV)',
+  mode: 'lines', line: { color: '#28a745', width: 3 },
+  fill: 'tonexty', fillcolor: 'rgba(40,167,69,0.08)',
+  hovertemplate: '%{x}<br>EV: $%{y:,.0f}<extra></extra>'
+};
+const todayLine2 = {
+  x: [today, today], y: [0, Math.max(...pv.filter(Boolean))],
+  mode: 'lines', name: 'Today',
+  line: { color: '#dc3545', width: 1.5, dash: 'dash' },
+  hoverinfo: 'skip'
+};
+
+Plotly.newPlot('chart_cost', [tracePV, traceAC, traceEV, todayLine2], {
+  margin: {t:20, b:50, l:80, r:30},
+  xaxis: { title: 'Date', showgrid: true, gridcolor: '#eee' },
+  yaxis: { title: 'Cumulative Cost (USD)', showgrid: true, gridcolor: '#eee',
+            tickformat: '$,.0f' },
+  legend: { orientation: 'h', y: -0.15 },
+  paper_bgcolor: 'white', plot_bgcolor: 'white'
+}, {responsive: true});
+</script>
+</body>
+</html>
